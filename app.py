@@ -13,7 +13,7 @@ MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.3"
 HF_MODEL_URL = f"https://api-inference.huggingface.co/models/{MODEL_NAME}"
 GOOGLE_SHEET_NAME = "Automate Blog Posts"
 WORKSHEET_NAME = "Basic"
-CREDENTIALS_FILE = "/etc/secrets/automateblogposts.json"  # updated path for secret file
+CREDENTIALS_FILE = "/etc/secrets/automateblogposts-c59de57c8731.json"  # updated path for secret file
 
 headers = {
     "Authorization": f"Bearer {HF_API_TOKEN}",
