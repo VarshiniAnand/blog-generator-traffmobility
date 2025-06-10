@@ -31,6 +31,7 @@ def generate(prompt):
         }
     }
     try:
+        print("🔁 Received request:", request.json)
         response = requests.post(HF_MODEL_URL, headers=headers, json=payload, timeout=60)
         if response.status_code == 200:
             result = response.json()
