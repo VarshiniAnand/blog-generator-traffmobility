@@ -32,7 +32,7 @@ def generate(prompt):
         }
     }
     try:
-        response = requests.post(HF_MODEL_URL, headers=headers, json=payload)
+        response = requests.post(HF_MODEL_URL, headers=headers, json=payload, timeout=60)
         if response.status_code == 200:
             result = response.json()
             if isinstance(result, list) and "generated_text" in result[0]:
