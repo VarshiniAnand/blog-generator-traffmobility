@@ -40,6 +40,7 @@ def generate(prompt):
             else:
                 return "[Error: Invalid response format]"
         else:
+            print("⚠️ HF Response:", response.status_code, response.text)
             return f"[Error {response.status_code}]: {response.text}"
     except requests.exceptions.Timeout:
         return "[Error: Hugging Face request timed out]"
@@ -79,6 +80,10 @@ def generate_blog():
         keywords = generate(f"List 5 SEO keywords for: {title}")
 
         if any(val.startswith("[Error") for val in [meta_desc, header, content, keywords]):
+            print("🔎 Meta Desc:", meta_desc)
+            print("📝 Header:", header)
+            print("📄 Content:", content[:100])  # Show a preview
+            print("🏷️ Keywords:", keywords)
             return jsonify({"error": "One or more generation tasks failed"}), 500
 
         update_values = [[
