@@ -41,6 +41,8 @@ def generate(prompt):
                 return "[Error: Invalid response format]"
         else:
             return f"[Error {response.status_code}]: {response.text}"
+    except requests.exceptions.Timeout:
+        return "[Error: Hugging Face request timed out]"
     except Exception as e:
         return f"[Error: {str(e)}]"
 
