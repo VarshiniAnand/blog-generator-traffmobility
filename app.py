@@ -5,7 +5,6 @@ import requests
 import time
 import os
 
-
 app = Flask(__name__)
 
 # === CONFIGURATION ===
@@ -14,7 +13,7 @@ MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.3"
 HF_MODEL_URL = f"https://api-inference.huggingface.co/models/{MODEL_NAME}"
 GOOGLE_SHEET_NAME = "Automate Blog Posts"
 WORKSHEET_NAME = "Basic"
-CREDENTIALS_FILE = "automateblogposts-c59de57c8731.json"
+CREDENTIALS_FILE = "/etc/secrets/automateblogposts.json"  # updated path for secret file
 
 headers = {
     "Authorization": f"Bearer {HF_API_TOKEN}",
@@ -54,17 +53,24 @@ def connect_sheet():
 
 @app.route("/generate", methods=["POST"])
 def generate_blog():
-    sheet = connect_sheet()
-    data = sheet.get_all_records()
+    try:
+        row_num = int(request.json.get("row", 0))  # expects 2-based row number
+        if row_num < 2:
+            return jsonify({"error": "Invalid row number"}), 400
 
-    for i, row in enumerate(data):
-        row_num = i + 2  # header offset
-        title = row.get("Title", "").strip()
-        prompt = row.get("Prompt", "").strip()
-        status = row.get("Status", "").strip().lower()
+        sheet = connect_sheet()
+        row_values = sheet.row_values(row_num)
+
+        # Pad row to at least 3 columns to prevent IndexError
+        while len(row_values) < 3:
+            row_values.append("")
+
+        title = row_values[0].strip()
+        prompt = row_values[1].strip()
+        status = row_values[2].strip().lower()
 
         if not prompt or status in ("done", "generated ✅", "completed"):
-            continue
+            return jsonify({"message": "No generation needed"}), 200
 
         meta_desc = generate(f"Write an SEO meta description for: {title}")
         header = generate(f"Write a compelling blog header for: {title}")
@@ -72,18 +78,19 @@ def generate_blog():
         keywords = generate(f"List 5 SEO keywords for: {title}")
 
         if any(val.startswith("[Error") for val in [meta_desc, header, content, keywords]):
-            continue
+            return jsonify({"error": "One or more generation tasks failed"}), 500
 
-        update_range = f"C{row_num}:J{row_num}"
         update_values = [[
             meta_desc, "", header, content, "", "Generated ✅", "", keywords
         ]]
-        sheet.update(update_range, update_values)
-        time.sleep(2)
+        sheet.update(f"C{row_num}:J{row_num}", update_values)
 
-    return jsonify({"status": "success"}), 200
+        return jsonify({"status": "success", "row": row_num}), 200
 
-# Required for Render
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Render-compatible launch
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
